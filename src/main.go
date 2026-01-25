@@ -33,7 +33,7 @@ func main() {
 
 	dbMap, _ := db.CreateDBMap(connDatas)
 
-	app := server.CreateServer(dbMap, db.RunQueryChan, db.RowToJson)
+	app := server.CreateServer(dbMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
 	app.Run("localhost:3000")
 }
 

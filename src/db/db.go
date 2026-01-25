@@ -41,8 +41,8 @@ func CreateDB(connData types.DBConnectionData) (*sql.DB, error) {
 	return db, nil
 }
 
-func CreateDBMap(connDatas []types.DBConnectionData) (map[string](*sql.DB), error) {
-	connectionMap := map[string](*sql.DB){}
+func CreateDBMap(connDatas []types.DBConnectionData) (types.DBMap, error) {
+	connectionMap := make(types.DBMap)
 	for _, data := range connDatas {
 		connection, err := CreateDB(data)
 		if err != nil {
@@ -140,6 +140,9 @@ func RunQueryChan(ch chan types.RowOrError, ctx context.Context, db *sql.DB, que
 	}
 }
 
+/*
+Row를 json으로 변환
+*/
 func RowToJson(row map[string]any) ([]byte, error) {
 	normalizedMap := make(map[string]any)
 	for key, value := range row {
@@ -153,4 +156,42 @@ func RowToJson(row map[string]any) ([]byte, error) {
 	}
 
 	return json.Marshal(normalizedMap)
+}
+
+/*
+Exec를 실행한 후 ResultObject를 채널로 보냄
+*/
+func RunExecChan(ch chan types.ResultObjectOrError, ctx context.Context, db *sql.DB, query string, args ...any) {
+	defer close(ch)
+	result, err := db.ExecContext(ctx, query, args...)
+	if err != nil {
+		ch <- err
+		return
+	}
+
+	// no error
+	ch <- nil
+
+	resultObject := types.ResultObject{
+		LastInsertId: 0,
+		RowsAffected: 0,
+	}
+
+	lastInsertedId, err := result.LastInsertId()
+	if err == nil {
+		resultObject.LastInsertId = lastInsertedId
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err == nil {
+		resultObject.RowsAffected = rowsAffected
+	}
+
+	ch <- resultObject
+}
+
+/*
+ResultObject를 json으로 변환
+*/
+func ResultObjectToJson(resultObject types.ResultObject) ([]byte, error) {
+	return json.Marshal(resultObject)
 }
