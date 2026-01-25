@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/db"
+	"github.com/taikowiki/dbmaster-taiko-wiki/src/server"
 )
 
 var useCwd *bool
@@ -31,22 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	dbMap, _ := db.CreateConnectionMap(connDatas)
+	dbMap, _ := db.CreateDBMap(connDatas)
 
-	taikoWikiDB := dbMap["taikowiki"]
-	if taikoWikiDB == nil {
-		return
-	}
-
-	ch := make(chan map[string]any)
-
-	ctx, _ := context.WithCancel(context.Background())
-	go db.RunQueryChan(ch, ctx, taikoWikiDB, "SELECT * FROM `log` LIMIT 10")
-
-	for row := range ch {
-		json, _ := db.RowToJson(row)
-		fmt.Println((string)(json))
-	}
+	app := server.CreateServer(dbMap, db.RunQueryChan, db.RowToJson)
+	app.Run("localhost:3000")
 }
 
 /*

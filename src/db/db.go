@@ -9,21 +9,13 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
 )
-
-type DBConnectionData struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	User     string `json:"user"`
-	Password string `json:"password"`
-	Database string `json:"database"` // Assuming JSON key is "db_name"
-	Timezone string `json:"timezone"`
-}
 
 /*
 연결을 생성
 */
-func CreateConnection(connData DBConnectionData) (*sql.DB, error) {
+func CreateDB(connData types.DBConnectionData) (*sql.DB, error) {
 	dsnParams := url.Values{}
 	dsnParams.Set("parseTime", "true")
 	dsnParams.Set("charset", "utf8mb4")
@@ -49,14 +41,14 @@ func CreateConnection(connData DBConnectionData) (*sql.DB, error) {
 	return db, nil
 }
 
-func CreateConnectionMap(connDatas []DBConnectionData) (map[string](*sql.DB), error) {
+func CreateDBMap(connDatas []types.DBConnectionData) (map[string](*sql.DB), error) {
 	connectionMap := map[string](*sql.DB){}
 	for _, data := range connDatas {
-		connection, err := CreateConnection(data)
+		connection, err := CreateDB(data)
 		if err != nil {
 			return nil, err
 		}
-		connectionMap[data.Database] = connection
+		connectionMap[data.Name] = connection
 	}
 	return connectionMap, nil
 }
@@ -64,8 +56,8 @@ func CreateConnectionMap(connDatas []DBConnectionData) (map[string](*sql.DB), er
 /*
 json을 DBConnectionData로 변환
 */
-func JsonToDBConnectionData(jsonContent []byte) ([]DBConnectionData, error) {
-	var connDatas []DBConnectionData
+func JsonToDBConnectionData(jsonContent []byte) ([]types.DBConnectionData, error) {
+	var connDatas []types.DBConnectionData
 	err := json.Unmarshal(jsonContent, &connDatas)
 	if err != nil {
 		return nil, err
@@ -76,21 +68,27 @@ func JsonToDBConnectionData(jsonContent []byte) ([]DBConnectionData, error) {
 /*
 Query를 실행한 후 row를 채널로 보냄
 */
-func RunQueryChan(ch chan map[string]any, ctx context.Context, db *sql.DB, query string, args ...any) error {
+func RunQueryChan(ch chan types.RowOrError, ctx context.Context, db *sql.DB, query string, args ...any) {
 	defer close(ch)
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return err
+		ch <- err
+		return
 	}
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return err
+		ch <- err
+		return
 	}
 	if len(columns) == 0 {
-		return nil
+		ch <- err
+		return
 	}
+
+	// no error
+	ch <- nil
 
 	for rows.Next() {
 		values := make([]any, len(columns))
@@ -137,11 +135,9 @@ func RunQueryChan(ch chan map[string]any, ctx context.Context, db *sql.DB, query
 		select {
 		case ch <- row:
 		case <-ctx.Done():
-			return nil
+			return
 		}
 	}
-
-	return nil
 }
 
 func RowToJson(row map[string]any) ([]byte, error) {
