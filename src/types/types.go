@@ -30,3 +30,12 @@ type ResultObject struct {
 // server
 type RowOrError any
 type ResultObjectOrError any
+
+type DBFuncData struct {
+	Name string
+	/*"query" | "exec"*/
+	FuncType string
+	Database string
+	Query    string
+}
+type DBFuncDataMap = map[string]DBFuncData

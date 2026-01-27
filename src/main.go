@@ -8,6 +8,7 @@ import (
 
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/db"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/server"
+	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
 )
 
 var useCwd *bool
@@ -32,13 +33,14 @@ func main() {
 	}
 
 	dbMap, _ := db.CreateDBMap(connDatas)
+	dbFuncDataMap := make(types.DBFuncDataMap)
 
-	app := server.CreateServer(dbMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
+	app := server.CreateServer(dbMap, dbFuncDataMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
 	app.Run("localhost:3000")
 }
 
 /*
-connDatas.json 읽기
+connDatas.env.json 읽기
 */
 func readConnDatasJson() ([]byte, error) {
 	var jsonFilePath string
@@ -48,7 +50,7 @@ func readConnDatasJson() ([]byte, error) {
 			return nil, err
 		}
 
-		jsonFilePath = filepath.Join(cwd, "connDatas.json")
+		jsonFilePath = filepath.Join(cwd, "connDatas.env.json")
 	} else {
 		execPath, err := os.Executable()
 		if err != nil {
@@ -56,7 +58,7 @@ func readConnDatasJson() ([]byte, error) {
 		}
 
 		execDir := filepath.Dir(execPath)
-		jsonFilePath = filepath.Join(execDir, "connDatas.json")
+		jsonFilePath = filepath.Join(execDir, "connDatas.env.json")
 	}
 
 	jsonContent, err := os.ReadFile(jsonFilePath)
