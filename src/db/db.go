@@ -54,18 +54,6 @@ func CreateDBMap(connDatas []types.DBConnectionData) (types.DBMap, error) {
 }
 
 /*
-json을 DBConnectionData로 변환
-*/
-func JsonToDBConnectionData(jsonContent []byte) ([]types.DBConnectionData, error) {
-	var connDatas []types.DBConnectionData
-	err := json.Unmarshal(jsonContent, &connDatas)
-	if err != nil {
-		return nil, err
-	}
-	return connDatas, nil
-}
-
-/*
 Query를 실행한 후 row를 채널로 보냄
 */
 func RunQueryChan(ch chan types.RowOrError, ctx context.Context, db *sql.DB, query string, args ...any) {

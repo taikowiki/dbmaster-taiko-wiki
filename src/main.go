@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,23 +8,15 @@ import (
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/db"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/server"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
+	"github.com/taikowiki/dbmaster-taiko-wiki/src/util"
 )
 
-var useCwd *bool
-
 func init() {
-	useCwd = flag.Bool("usecwd", false, "")
-	flag.Parse()
+	util.LoadFlag()
 }
 
 func main() {
-	json, err := readConnDatasJson()
-	if err != nil {
-		fmt.Println("An error occurred.")
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	connDatas, err := db.JsonToDBConnectionData(json)
+	connDatas, err := util.LoadConnDatas()
 	if err != nil {
 		fmt.Println("An error occurred.")
 		fmt.Println(err)
@@ -44,7 +35,7 @@ connDatas.env.json 읽기
 */
 func readConnDatasJson() ([]byte, error) {
 	var jsonFilePath string
-	if *useCwd {
+	if *util.Flag.UseCwd {
 		cwd, err := os.Getwd()
 		if err != nil {
 			return nil, err
