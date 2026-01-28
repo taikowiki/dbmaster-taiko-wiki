@@ -15,8 +15,8 @@ type QueryRequestData struct {
 	Args  []any  `json:"args"`
 }
 type FuncRequestData struct {
-	Name string `json:"name"`
-	Args []any  `json:"args"`
+	Name   string         `json:"name"`
+	Params map[string]any `json:"params"`
 }
 
 /*
@@ -24,7 +24,7 @@ Gin 서버 생성
 */
 func CreateServer(
 	dbMap types.DBMap,
-	dbFuncDataMap types.DBFuncDataMap,
+	dbFuncMap types.DBFuncMap,
 	runQueryChan types.RunQueryChanFuncType,
 	runExecChan types.RunExecChanFuncType,
 	rowToJson types.RowToJsonFuncType,
@@ -33,7 +33,7 @@ func CreateServer(
 	r := gin.Default()
 	r.POST("/query", createQueryHandler(dbMap, runQueryChan, rowToJson))
 	r.POST("/exec", createExecHandler(dbMap, runExecChan, resultObjectToJson))
-	r.POST("/func", createDBFuncHandler(dbMap, dbFuncDataMap, runQueryChan, runExecChan, rowToJson, resultObjectToJson))
+	r.POST("/func", createDBFuncHandler(dbMap, dbFuncMap, runQueryChan, runExecChan, rowToJson, resultObjectToJson))
 	return r
 }
 
@@ -89,7 +89,7 @@ func createExecHandler(
 
 func createDBFuncHandler(
 	dbMap types.DBMap,
-	dbFuncDataMap types.DBFuncDataMap,
+	dbFuncMap types.DBFuncMap,
 	runQueryChan types.RunQueryChanFuncType,
 	runExecChan types.RunExecChanFuncType,
 	rowToJson types.RowToJsonFuncType,
@@ -102,28 +102,32 @@ func createDBFuncHandler(
 			return
 		}
 
-		dbFuncData := dbFuncDataMap[req.Name]
-		if dbFuncData.Name == "" {
+		dbFunc := dbFuncMap[req.Name]
+		if dbFunc == nil {
 			c.Status(400)
 			return
 		}
 
-		db := dbMap[dbFuncData.Database]
-		if db == nil {
-			c.Status(400)
+		ch := make(chan types.ResponseJsonOrError)
+		go dbFunc(ch, c, dbMap, req.Params, runQueryChan, runExecChan, rowToJson, resultObjectToJson)
+		err := <-ch
+		if err == nil {
+			c.Writer.Header().Set("Content-Type", "application/x-ndjson")
+			c.Writer.WriteHeader(200)
+		} else if e, ok := err.(*types.ErrorWithStatus); ok {
+			c.Status(e.Status)
 			return
-		}
-
-		switch dbFuncData.FuncType {
-		case "query":
-			sendQueryRows(c, db, dbFuncData.Query, req.Args, runQueryChan, rowToJson)
-			return
-		case "exec":
-			sendExecResult(c, db, dbFuncData.Query, req.Args, runExecChan, resultObjectToJson)
-			return
-		default:
+		} else {
 			c.Status(500)
 			return
+		}
+
+		flusher := c.Writer.(http.Flusher)
+		for row := range ch {
+			if v, ok := row.([]byte); ok {
+				fmt.Fprintln(c.Writer, (string)(v))
+				flusher.Flush()
+			}
 		}
 	}
 }

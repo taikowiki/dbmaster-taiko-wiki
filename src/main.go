@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/db"
+	"github.com/taikowiki/dbmaster-taiko-wiki/src/dbfunc"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/server"
-	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/util"
 )
 
@@ -24,38 +23,7 @@ func main() {
 	}
 
 	dbMap, _ := db.CreateDBMap(connDatas)
-	dbFuncDataMap := make(types.DBFuncDataMap)
 
-	app := server.CreateServer(dbMap, dbFuncDataMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
+	app := server.CreateServer(dbMap, dbfunc.DBFuncMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
 	app.Run("localhost:3000")
-}
-
-/*
-connDatas.env.json 읽기
-*/
-func readConnDatasJson() ([]byte, error) {
-	var jsonFilePath string
-	if *util.Flag.UseCwd {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-
-		jsonFilePath = filepath.Join(cwd, "connDatas.env.json")
-	} else {
-		execPath, err := os.Executable()
-		if err != nil {
-			return nil, err
-		}
-
-		execDir := filepath.Dir(execPath)
-		jsonFilePath = filepath.Join(execDir, "connDatas.env.json")
-	}
-
-	jsonContent, err := os.ReadFile(jsonFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return jsonContent, nil
 }

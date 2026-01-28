@@ -30,12 +30,15 @@ type ResultObject struct {
 // server
 type RowOrError any
 type ResultObjectOrError any
-
-type DBFuncData struct {
-	Name string
-	/*"query" | "exec"*/
-	FuncType string
-	Database string
-	Query    string
+type ErrorWithStatus struct {
+	Status int
 }
-type DBFuncDataMap = map[string]DBFuncData
+
+func (e *ErrorWithStatus) Error() string {
+	return (string)(e.Status)
+}
+
+// DB Func
+type ResponseJsonOrError any
+type DBFunc = func(ch chan ResponseJsonOrError, c context.Context, dbMap DBMap, params map[string]any, runQueryChan RunQueryChanFuncType, runExecChan RunExecChanFuncType, rowToJson RowToJsonFuncType, resultObjectToJson ResultObjectToJsonFuncType)
+type DBFuncMap = map[string]DBFunc
