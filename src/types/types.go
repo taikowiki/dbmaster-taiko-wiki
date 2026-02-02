@@ -30,6 +30,7 @@ type ResultObject struct {
 // server
 type RowOrError any
 type ResultObjectOrError any
+type RowOrResultObjectOrError any
 type ErrorWithStatus struct {
 	Status int
 }
