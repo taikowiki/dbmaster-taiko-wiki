@@ -12,6 +12,7 @@ import (
 
 func init() {
 	util.LoadFlag()
+	dbfunc.InitDBFuncMap()
 }
 
 func main() {

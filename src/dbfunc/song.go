@@ -8,8 +8,8 @@ import (
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
 )
 
-var DBFuncMap = types.DBFuncMap{
-	"song-data": func(
+var song_dbFuncMap = types.DBFuncMap{
+	"song.song-data": func(
 		ch chan types.ResponseJsonOrError,
 		c context.Context,
 		dbMap types.DBMap,
@@ -47,7 +47,7 @@ var DBFuncMap = types.DBFuncMap{
 			}
 		}
 	},
-	"partial-song-data": func(
+	"song.partial-song-data": func(
 		ch chan types.ResponseJsonOrError,
 		c context.Context,
 		dbMap types.DBMap,
@@ -92,7 +92,7 @@ var DBFuncMap = types.DBFuncMap{
 
 		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
 	},
-	"partial-data-of-all-songs": func(
+	"song.partial-data-of-all-songs": func(
 		ch chan types.ResponseJsonOrError,
 		c context.Context,
 		dbMap types.DBMap,
@@ -136,52 +136,4 @@ var DBFuncMap = types.DBFuncMap{
 
 		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
 	},
-}
-
-func checkReceiveChanError(receiveChan any) error {
-	var err any
-	switch ch := receiveChan.(type) {
-	case chan types.RowOrError:
-		{
-			err = <-ch
-		}
-	case chan types.ResultObjectOrError:
-		{
-			err = <-ch
-		}
-	}
-
-	if err != nil {
-		return err.(error)
-	} else {
-		return nil
-	}
-}
-func sendRowJson(receiveChan chan types.RowOrError, sendChan chan types.ResponseJsonOrError, rowToJson types.RowToJsonFuncType, resultObjectToJson types.ResultObjectToJsonFuncType) {
-	for data := range receiveChan {
-		switch v := data.(type) {
-		case map[string]any:
-			{
-				json, err := rowToJson(v)
-				if err != nil {
-					continue
-				}
-				sendChan <- json
-			}
-		}
-	}
-}
-func sendResultObjectJson(receiveChan chan types.ResultObjectOrError, sendChan chan types.ResponseJsonOrError, rowToJson types.RowToJsonFuncType, resultObjectToJson types.ResultObjectToJsonFuncType) {
-	for data := range receiveChan {
-		switch v := data.(type) {
-		case types.ResultObject:
-			{
-				json, err := resultObjectToJson(v)
-				if err != nil {
-					continue
-				}
-				sendChan <- json
-			}
-		}
-	}
 }
