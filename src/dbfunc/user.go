@@ -3,6 +3,7 @@ package dbfunc
 import (
 	"context"
 
+	"github.com/doug-martin/goqu/v9"
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/types"
 )
 
@@ -105,6 +106,62 @@ var user_dbFuncMap = types.DBFuncMap{
 
 		receiveChan := make(chan types.RowOrError)
 		go runQueryChan(receiveChan, c, taikowikiDB, "SELECT `nickname`, `UUID` FROM `user/data`")
+		ch <- checkReceiveChanError(receiveChan)
+
+		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
+	},
+	/*
+		@types `params.uuids` []string
+	*/
+	"user.nicks": func(
+		ch chan types.ResponseJsonOrError,
+		c context.Context,
+		dbMap types.DBMap,
+		params map[string]any,
+		runQueryChan types.RunQueryChanFuncType,
+		runExecChan types.RunExecChanFuncType,
+		rowToJson types.RowToJsonFuncType,
+		resultObjectToJson types.ResultObjectToJsonFuncType,
+	) {
+		defer close(ch)
+		taikowikiDB := dbMap["taikowiki"]
+		if taikowikiDB == nil {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		uuids, ok := params["uuids"].([]any)
+		if !ok {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		for _, v := range uuids {
+			if _, ok := v.(string); !ok {
+				ch <- &types.ErrorWithStatus{
+					Status: 400,
+				}
+				return
+			}
+		}
+
+		var err any
+		query, _, err := goqu.Dialect("mysql").From("user/data").Select("nickname", "UUID").Where(goqu.Ex{
+			"UUID": uuids,
+		}).ToSQL()
+		if err != nil {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		receiveChan := make(chan types.RowOrError)
+		go runQueryChan(receiveChan, c, taikowikiDB, query)
 		ch <- checkReceiveChanError(receiveChan)
 
 		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)

@@ -12,6 +12,7 @@ var DBFuncMap = types.DBFuncMap{}
 func InitDBFuncMap() {
 	maps.Copy(DBFuncMap, song_dbFuncMap)
 	maps.Copy(DBFuncMap, user_dbFuncMap)
+	maps.Copy(DBFuncMap, rating_dbFuncMap)
 }
 
 func checkReceiveChanError(receiveChan any) error {
