@@ -31,6 +31,7 @@ func CreateServer(
 	resultObjectToJson types.ResultObjectToJsonFuncType,
 ) *gin.Engine {
 	r := gin.Default()
+	r.Use(permissionCheckMiddleware(dbMap, runQueryChan))
 	r.POST("/query", createQueryHandler(dbMap, runQueryChan, rowToJson))
 	r.POST("/exec", createExecHandler(dbMap, runExecChan, resultObjectToJson))
 	r.POST("/func", createDBFuncHandler(dbMap, dbFuncMap, runQueryChan, runExecChan, rowToJson, resultObjectToJson))
@@ -97,9 +98,14 @@ func createDBFuncHandler(
 ) func(*gin.Context) {
 	return func(c *gin.Context) {
 		var req FuncRequestData
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.Status(400)
-			return
+		funcRequestData, exists := c.Get("funcRequestData")
+		if exists {
+			req = funcRequestData.(FuncRequestData)
+		} else {
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.Status(400)
+				return
+			}
 		}
 
 		dbFunc := dbFuncMap[req.Name]
