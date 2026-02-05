@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/taikowiki/dbmaster-taiko-wiki/src/db"
@@ -23,8 +24,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	dbMap, _ := db.CreateDBMap(connDatas)
+	dbMap, err := db.CreateDBMap(connDatas)
+	env, err := util.LoadEnv()
+	if err != nil {
+		log.Panicln(err)
+	}
 
 	app := server.CreateServer(dbMap, dbfunc.DBFuncMap, db.RunQueryChan, db.RunExecChan, db.RowToJson, db.ResultObjectToJson)
-	app.Run("localhost:3000")
+	app.Run(":" + env["PORT"])
 }
