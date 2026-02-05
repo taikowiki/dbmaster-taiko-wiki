@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,7 @@ func CreateServer(
 	resultObjectToJson types.ResultObjectToJsonFuncType,
 ) *gin.Engine {
 	r := gin.Default()
+	//r.Use(gin.Logger(), gin.Recovery())
 	r.Use(permissionCheckMiddleware(dbMap, runQueryChan))
 	r.POST("/query", createQueryHandler(dbMap, runQueryChan, rowToJson))
 	r.POST("/exec", createExecHandler(dbMap, runExecChan, resultObjectToJson))
@@ -121,9 +123,11 @@ func createDBFuncHandler(
 			c.Writer.Header().Set("Content-Type", "application/x-ndjson")
 			c.Writer.WriteHeader(200)
 		} else if e, ok := err.(*types.ErrorWithStatus); ok {
+			log.Println(err)
 			c.Status(e.Status)
 			return
 		} else {
+			log.Println(err)
 			c.Status(500)
 			return
 		}
@@ -203,5 +207,6 @@ func sendExecResult(
 		}
 	}
 
+	log.Println("Result Object Type Error.")
 	c.Status(500)
 }

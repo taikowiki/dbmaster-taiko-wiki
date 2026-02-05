@@ -25,6 +25,9 @@ func main() {
 	}
 
 	dbMap, err := db.CreateDBMap(connDatas)
+	if err != nil {
+		log.Panicln(err)
+	}
 	env, err := util.LoadEnv()
 	if err != nil {
 		log.Panicln(err)

@@ -12,7 +12,9 @@ func permissionCheckMiddleware(dbMap types.DBMap, runQueryChan types.RunQueryCha
 		path := c.Request.URL.Path
 		dbMasterDB := dbMap["dbMaster"]
 		if dbMasterDB == nil {
-			c.AbortWithStatus(500)
+			c.AbortWithStatusJSON(500, gin.H{
+				"reason": "NO_DBMASTER_DATABASE",
+			})
 			return
 		}
 		apiKey := c.Request.Header.Get("X-Api-Key")
@@ -27,6 +29,7 @@ func permissionCheckMiddleware(dbMap types.DBMap, runQueryChan types.RunQueryCha
 
 			err := <-ch
 			if err != nil {
+				log.Println(err)
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
@@ -35,12 +38,14 @@ func permissionCheckMiddleware(dbMap types.DBMap, runQueryChan types.RunQueryCha
 			row := <-ch
 			v, ok := row.(map[string]any)
 			if !ok {
+				log.Println("Permission check error.")
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
 			}
 			count, ok := v["count"].(int64)
 			if !ok {
+				log.Println("Permission check error.")
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
@@ -64,6 +69,7 @@ func permissionCheckMiddleware(dbMap types.DBMap, runQueryChan types.RunQueryCha
 
 			err := <-ch
 			if err != nil {
+				log.Println(err)
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
@@ -72,12 +78,14 @@ func permissionCheckMiddleware(dbMap types.DBMap, runQueryChan types.RunQueryCha
 			row := <-ch
 			v, ok := row.(map[string]any)
 			if !ok {
+				log.Println("Permission check error.")
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
 			}
 			count, ok := v["count"].(int64)
 			if !ok {
+				log.Println("Permission check error.")
 				c.AbortWithStatus(500)
 				log.Println(err)
 				return
