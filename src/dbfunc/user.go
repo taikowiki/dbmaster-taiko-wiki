@@ -166,4 +166,29 @@ var user_dbFuncMap = types.DBFuncMap{
 
 		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
 	},
+	"user.for-compe-admin": func(
+		ch chan types.ResponseJsonOrError,
+		c context.Context,
+		dbMap types.DBMap,
+		params map[string]any,
+		runQueryChan types.RunQueryChanFuncType,
+		runExecChan types.RunExecChanFuncType,
+		rowToJson types.RowToJsonFuncType,
+		resultObjectToJson types.ResultObjectToJsonFuncType,
+	) {
+		defer close(ch)
+		taikowikiDB := dbMap["taikowiki"]
+		if taikowikiDB == nil {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		receiveChan := make(chan types.RowOrError)
+		go runQueryChan(receiveChan, c, taikowikiDB, "SELECT `nickname`, `UUID` FROM `user/data`")
+		ch <- checkReceiveChanError(receiveChan)
+
+		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
+	},
 }
