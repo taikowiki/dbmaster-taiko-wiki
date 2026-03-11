@@ -104,4 +104,56 @@ var rating_dbFuncMap = types.DBFuncMap{
 
 		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
 	},
+	/*
+		@types `params.uuid` string
+		@types `params.all` bool
+	*/
+	"rating.song-rating-datas": func(
+		ch chan types.ResponseJsonOrError,
+		c context.Context,
+		dbMap types.DBMap,
+		params map[string]any,
+		runQueryChan types.RunQueryChanFuncType,
+		runExecChan types.RunExecChanFuncType,
+		rowToJson types.RowToJsonFuncType,
+		resultObjectToJson types.ResultObjectToJsonFuncType,
+	) {
+		defer close(ch)
+		ratingDB := dbMap["rating"]
+		if ratingDB == nil {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		uuid, ok1 := params["uuid"].(string)
+		all, ok2 := params["all"].(bool)
+		if !ok1 || !ok2 {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		var err any
+		var query string
+		if all {
+			query = "SELECT * FROM `user/song_rating_data` WHERE `UUID` = ?"
+		} else {
+			query = "SELECT * FROM `user/song_rating_data` WHERE `UUID` = ? ORDER BY `ratingScore` DESC LIMIT 0, 50"
+		}
+		if err != nil {
+			ch <- &types.ErrorWithStatus{
+				Status: 400,
+			}
+			return
+		}
+
+		receiveChan := make(chan types.RowOrError)
+		go runQueryChan(receiveChan, c, ratingDB, query, uuid)
+		ch <- checkReceiveChanError(receiveChan)
+
+		sendRowJson(receiveChan, ch, rowToJson, resultObjectToJson)
+	},
 }

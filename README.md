@@ -30,6 +30,7 @@
 | :--- | :--- | :--- |
 | `rating.simple-profile` | 사용자의 요약 프로필(레이팅, 닉네임 등)을 조회합니다. | • `uuid` (string) |
 | `rating.taiko-profiles` | 여러 사용자의 태고 프로필 정보를 일괄 조회합니다. | • `uuids` ([]string) |
+| `rating.song-rating-datas` | 사용자의 곡별 평점 데이터를 조회합니다. (all=false 시 상위 50개) | • `uuid` (string)<br>• `all` (bool) |
 
 ### 4. 파일 로그 관련 (`file.go`)
 
