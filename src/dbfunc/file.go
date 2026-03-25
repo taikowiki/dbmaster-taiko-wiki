@@ -8,7 +8,10 @@ import (
 )
 
 var file_dbFuncMap = types.DBFuncMap{
-	"file.getByFileName": func(
+	/*
+		@types `params.fileName` string
+	*/
+	"file.get-by-file-name": func(
 		ch chan types.ResponseJsonOrError,
 		c context.Context,
 		dbMap types.DBMap,
@@ -54,7 +57,12 @@ var file_dbFuncMap = types.DBFuncMap{
 			}
 		}
 	},
-	"file.newLog": func(
+	/*
+		@types `params.UUID` string
+		@types `params.originalFileName` string
+		@types `params.fileName` string
+	*/
+	"file.log": func(
 		ch chan types.ResponseJsonOrError,
 		c context.Context,
 		dbMap types.DBMap,
